@@ -1,0 +1,32 @@
+# Allowlist for scripts/ci/no-private-refs.sh — a security decision, not a convenience.
+#
+# One rule per line, `path/glob:pattern  # justification`. The glob matches the repo-relative
+# path; the pattern is an ERE matched against the whole `git grep` hit (`path:line:text`).
+# Blank lines and `#` comments are ignored. A justification is mandatory in review.
+#
+# ⛔ Do NOT add an entry to keep a real internal hostname, address or private repository path
+# in a public tree. Remove it instead. An entry is only for a string that *looks* private but
+# is not: a documented loopback example, a placeholder, or a term that collides with a rule.
+#
+# The guard and this file necessarily spell the patterns out; the guard excludes both from
+# its own scan. Everything else is scanned.
+#
+# No entries by default. An empty file that fails the build is the correct starting state.
+
+# --- strata_rag, reviewed 2026-11-13 ---------------------------------------------------------
+# The SSRF guard's denylist: these suffixes ARE the control. No host is named.
+src/providers/ssrf.rs:.*BLOCKED_SUFFIXES.*
+src/providers/ssrf.rs:.*unique-local, unspecified.*
+src/metering.rs:.*"(\.internal|\.ts\.net)",$
+# Refusal/classification fixtures: synthetic names and CGNAT literals the guard must reject.
+src/providers/ssrf.rs:.*(100\.64\.0\.[12]|100\.127\.255\.255|100\.100\.1\.1:443).*
+src/providers/ssrf.rs:.*(foo\.internal\.|example\.internal|example\.svc\.cluster\.local).*
+tests/tenant_providers.rs:.*(100\.64\.0\.[12]|foo\.internal\.|example\.internal|example\.svc\.cluster\.local|llm-provider\.internal).*
+src/metering.rs:.*(provider\.example\.internal|100\.64\.0\.9|tei\.example\.svc\.cluster\.local).*
+# Documentation of that denylist: generic DNS suffixes, no host.
+README.md:.*single-label name or end in .*
+src/providers/deployment.rs:.*internal hosts \(loopback, private, CGNAT.*
+# Picks the self-signed-CA default for a private host: names the suffix, not a host.
+eval/hotpotqa/config.py:.*endswith\("\.internal"\).*
+# Recorded 2026-09-17 provenance of the promoted KAG baseline; kept verbatim, not rewritten.
+eval/hotpotqa/data/kag_n50_20260902.summary.json:.*"judge".*

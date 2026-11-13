@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>strata-rag UI design</title>
+<!--
+  Static design mock for the strata-rag UI (v2 scope, not built).
+  Four screens: Tree, Sources, Playground, Eval. Data is the real eval tree
+  (eval/tree.json) and the m4 acceptance numbers (docs/superpowers/results/2026-10-15-acceptance.md);
+  route scores, sources and sync states are illustrative.
+  Elements marked "API gap" have no backend endpoint yet.
+-->
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f1f3f6; --border: #dde1e7;
+  --text: #1b1f24; --muted: #5d6673; --faint: #8a93a0;
+  --accent: #2f6fde; --accent-soft: #e4edfc;
+  --router: #7a4fd1; --router-soft: #efe8fb;
+  --leaf: #1f8a5b; --leaf-soft: #e2f3ea;
+  --warn: #b7791f; --warn-soft: #fbf0dc;
+  --bad: #c53b3b; --bad-soft: #fbe5e5;
+  --bar: #c9d3e2;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111418; --panel: #181c21; --panel-2: #1f242b; --border: #2c333c;
+    --text: #e6e9ed; --muted: #a0a9b5; --faint: #6f7884;
+    --accent: #6b9cf0; --accent-soft: #1d2a40;
+    --router: #a88ae8; --router-soft: #2a2140;
+    --leaf: #4cc08a; --leaf-soft: #17302a;
+    --warn: #e0a84a; --warn-soft: #3a2e17;
+    --bad: #ec6b6b; --bad-soft: #3d1f1f;
+    --bar: #3a4452;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111418; --panel: #181c21; --panel-2: #1f242b; --border: #2c333c;
+  --text: #e6e9ed; --muted: #a0a9b5; --faint: #6f7884;
+  --accent: #6b9cf0; --accent-soft: #1d2a40;
+  --router: #a88ae8; --router-soft: #2a2140;
+  --leaf: #4cc08a; --leaf-soft: #17302a;
+  --warn: #e0a84a; --warn-soft: #3a2e17;
+  --bad: #ec6b6b; --bad-soft: #3d1f1f;
+  --bar: #3a4452;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+header { display: flex; align-items: center; gap: 24px; padding: 0 20px; height: 52px;
+  background: var(--panel); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+.brand { font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
+.brand small { color: var(--faint); font-weight: 400; margin-left: 6px; font-family: var(--mono); font-size: 12px; }
+nav { display: flex; gap: 2px; overflow-x: auto; }
+nav button { border: 0; background: none; color: var(--muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font: inherit; white-space: nowrap; }
+nav button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.health { margin-left: auto; display: flex; gap: 10px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--leaf); margin-right: 4px; }
+.dot.warn { background: var(--warn); }
+main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.screen { display: none; }
+.screen.on { display: block; }
+h2 { font-size: 18px; margin: 0 0 4px; letter-spacing: -.01em; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+.grid { display: grid; gap: 16px; }
+.g-tree { grid-template-columns: 340px 1fr; }
+.g-play { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .g-tree, .g-play { grid-template-columns: 1fr; } .health { display: none; } }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-width: 0; }
+.card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.btn { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.sm { padding: 3px 8px; font-size: 12px; }
+.btn.danger { color: var(--bad); }
+input, textarea, select { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; width: 100%; }
+textarea { resize: vertical; min-height: 84px; }
+label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; font-weight: 500; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.pill.router { background: var(--router-soft); color: var(--router); }
+.pill.leaf { background: var(--leaf-soft); color: var(--leaf); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.ok { background: var(--leaf-soft); color: var(--leaf); }
+.pill.muted { background: var(--panel-2); color: var(--muted); }
+.gap { border: 1px dashed var(--warn); border-radius: 6px; padding: 1px 6px; font-size: 11px; color: var(--warn); white-space: nowrap; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+
+/* tree */
+.tree { list-style: none; margin: 0; padding: 0; }
+.tree ul { list-style: none; margin: 0; padding-left: 16px; border-left: 1px solid var(--border); margin-left: 9px; }
+.node { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+.node:hover { background: var(--panel-2); }
+.node.sel { background: var(--accent-soft); }
+.node .ic { width: 18px; height: 18px; border-radius: 4px; display: grid; place-items: center; font-size: 10px; font-weight: 700; flex: none; }
+.node .ic.r { background: var(--router-soft); color: var(--router); }
+.node .ic.l { background: var(--leaf-soft); color: var(--leaf); }
+.node .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node .ct { margin-left: auto; color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 4px 0 8px; }
+@media (max-width: 600px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat { background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+.crumbs { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.sim { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sim td { padding: 6px 4px; border-top: 1px solid var(--border); }
+.sim td.n { width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+.meter { height: 6px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--bar); }
+.meter i.hot { background: var(--warn); }
+.callout { background: var(--panel-2); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--muted); margin-top: 12px; }
+
+/* tables */
+.tbl-wrap { overflow-x: auto; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.t th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.t td { padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.t td.num, table.t th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.t tr:last-child td { border-bottom: 0; }
+.prog { height: 4px; background: var(--panel-2); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.prog i { display: block; height: 100%; background: var(--accent); }
+.types { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 800px) { .types { grid-template-columns: repeat(2, 1fr); } }
+.type { border: 1px solid var(--border); border-radius: 8px; padding: 12px; cursor: pointer; }
+.type.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.type b { display: block; margin-bottom: 4px; }
+.type span { font-size: 12px; color: var(--muted); }
+
+/* playground */
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); color: var(--muted); padding: 6px 12px; font: inherit; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.params { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.level { margin-bottom: 14px; }
+.level h4 { margin: 0 0 6px; font-size: 12px; color: var(--muted); font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.cand { display: grid; grid-template-columns: 170px 1fr 48px 70px; gap: 8px; align-items: center; padding: 4px 0; font-size: 13px; }
+@media (max-width: 600px) { .cand { grid-template-columns: 120px 1fr 44px; } .cand .why { display: none; } }
+.cand .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cand.pick .nm { font-weight: 600; }
+.cand .meter i { background: var(--bar); }
+.cand.pick .meter i { background: var(--accent); }
+.cand .n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12px; }
+.threshold { position: relative; }
+.result { border-top: 1px solid var(--border); padding: 12px 0; }
+.result:first-of-type { border-top: 0; padding-top: 0; }
+.result .path { font-family: var(--mono); font-size: 12px; color: var(--leaf); }
+.result p { margin: 6px 0; font-size: 13px; }
+.scores { display: flex; gap: 12px; font-family: var(--mono); font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+.stack { display: flex; height: 22px; border-radius: 5px; overflow: hidden; font-size: 11px; color: #fff; font-weight: 600; }
+.stack div { display: grid; place-items: center; white-space: nowrap; overflow: hidden; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+/* eval */
+.verdict { display: flex; gap: 16px; align-items: flex-start; }
+.verdict .big { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.conf { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.conf th { font-weight: 500; color: var(--muted); padding: 4px 6px; white-space: nowrap; }
+.conf th.rot { writing-mode: vertical-rl; transform: rotate(180deg); height: 120px; text-align: left; }
+.conf td { width: 34px; height: 30px; text-align: center; border: 1px solid var(--panel); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">strata-rag <small>127.0.0.1:8092</small></div>
+  <nav id="nav">
+    <button data-s="tree" class="on">Tree</button>
+    <button data-s="sources">Sources</button>
+    <button data-s="play">Playground</button>
+    <button data-s="eval">Eval</button>
+  </nav>
+  <div class="health">
+    <span><i class="dot"></i>db</span><span><i class="dot"></i>models</span>
+    <span><i class="dot"></i>laya</span><span><i class="dot warn"></i>vllm</span>
+    <span><i class="dot"></i>mlx-ingestion</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 1. TREE ============ -->
+<section class="screen on" id="s-tree">
+  <h2>Routing tree</h2>
+  <p class="sub">Set the top-level dimensions and their sub-dimensions. Routers route to their children, and leaves hold the chunks. Each node's description is what the router matches a query against.</p>
+  <div class="grid g-tree">
+    <div class="card">
+      <div class="row" style="margin-bottom:10px">
+        <h3 style="margin:0">Stores</h3><span class="spacer"></span>
+        <button class="btn sm">+ Root</button>
+      </div>
+      <ul class="tree" id="tree"></ul>
+      <div class="callout">The tree has 3 levels, 3 routers and 7 leaves. All 7 leaves are reached when beam is 3, so routing does not narrow the search at that setting. <a href="#" data-goto="eval">See eval</a>.</div>
+    </div>
+
+    <div class="card" id="detail"></div>
+  </div>
+</section>
+
+<!-- ============ 2. SOURCES ============ -->
+<section class="screen" id="s-sources">
+  <div class="row" style="align-items:flex-end;margin-bottom:16px">
+    <div>
+      <h2>Sources <span class="gap">API gap</span></h2>
+      <p class="sub" style="margin:0">Choose where each leaf's documents come from. Converting files to text is done by a separate service, mlx-ingestion-backend, or a future Rust replacement. strata only receives text.</p>
+    </div>
+    <span class="spacer"></span>
+    <div style="min-width:260px">
+      <label style="margin-top:0">Leaf</label>
+      <select id="leafSel"></select>
+    </div>
+  </div>
+
+  <div class="stats" id="srcStats"></div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="row" style="margin-bottom:12px"><h3 style="margin:0">Attached sources</h3><span class="spacer"></span><button class="btn sm primary">Sync all</button></div>
+    <div class="tbl-wrap"><table class="t" id="srcTable">
+      <thead><tr><th>Source</th><th>Type</th><th>Converter</th><th class="num">Docs</th><th class="num">Chunks</th><th>Last sync</th><th>Status</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h3>Add source</h3>
+    <div class="types" id="types">
+      <div class="type on" data-t="folder"><b>Local folder</b><span>Watch a directory. .txt and .md files are ingested directly, and other file types go through the converter.</span></div>
+      <div class="type" data-t="upload"><b>Upload files</b><span>Upload once by drag and drop. PDFs and images go through the converter.</span></div>
+      <div class="type" data-t="minio"><b>MinIO prefix</b><span>An s3://bucket/prefix on your MinIO server, re-listed each time you sync.</span></div>
+      <div class="type" data-t="text"><b>Paste text</b><span>A single document, using the existing POST /documents call.</span></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:4px">
+      <div><label>Path</label><input value="~/corpora/gutenberg/politics" class="mono"></div>
+      <div><label>Include glob</label><input value="**/*.{txt,md,pdf}" class="mono"></div>
+      <div><label>Converter for non-text files</label>
+        <select><option>ingestion-backend:9120 (OCR + layout)</option><option>none (skip non-text files)</option></select></div>
+      <div><label>On sync</label>
+        <select><option>add new and changed files, keep removed ones</option><option>full mirror (delete documents whose file was removed)</option></select></div>
+    </div>
+    <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn">Dry run</button><button class="btn primary">Attach &amp; sync</button></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:12px"><h3 style="margin:0">Documents</h3><span class="spacer"></span><input placeholder="Filter by title or source" style="max-width:260px"></div>
+    <div class="tbl-wrap"><table class="t" id="docTable">
+      <thead><tr><th>Title</th><th>Source</th><th class="num">Tokens</th><th class="num">Chunks</th><th>Ingested</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ 3. PLAYGROUND ============ -->
+<section class="screen" id="s-play">
+  <h2>Query playground</h2>
+  <p class="sub">Run a query and see the route it took, with a score at each level, then the chunks it returned. Use this to find out why a question went to the wrong branch.</p>
+  <div class="card" style="margin-bottom:16px">
+    <div class="row">
+      <input id="q" value="How many pins can ten workmen make in a day?" style="flex:1;min-width:240px">
+      <button class="btn">Query</button><button class="btn primary">Ask</button>
+    </div>
+    <div class="row" style="margin-top:12px;gap:16px">
+      <div class="seg" id="mode"><button data-m="hybrid" class="on">hybrid</button><button data-m="embed">embed</button><button data-m="laya">laya</button><button data-m="flat">flat</button></div>
+      <div class="params" style="flex:1;min-width:280px">
+        <div><label style="margin-top:0">beam</label><input type="number" value="1" min="1" id="beam"></div>
+        <div><label style="margin-top:0">min_score</label><input type="number" value="0.35" step="0.05"></div>
+        <div><label style="margin-top:0">top_k</label><input type="number" value="8"></div>
+      </div>
+      <div><label style="margin-top:0">root</label><select><option>library</option><option>library/humanities</option></select></div>
+    </div>
+  </div>
+
+  <div class="grid g-play">
+    <div class="card">
+      <div class="row" style="margin-bottom:10px"><h3 style="margin:0">Route</h3><span class="spacer"></span><span class="pill muted" id="routeMeta"></span></div>
+      <div id="route"></div>
+      <h3 style="margin-top:18px">Timings</h3>
+      <div class="stack" id="timing"></div>
+      <div class="legend" id="timingLegend"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:10px"><h3 style="margin:0">Results</h3><span class="spacer"></span><span class="faint" style="font-size:12px">ranked by rerank score, then RRF</span></div>
+      <div id="answer" class="callout" style="margin:0 0 12px;color:var(--text)"><b style="font-size:12px;color:var(--muted)">ANSWER · /api/ask</b><br>Smith says ten men could make <b>upwards of forty-eight thousand pins a day</b> between them, about 4,800 per person, where a worker alone and untrained could hardly make twenty <span class="mono faint">[1][2]</span>.</div>
+      <div id="results"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. EVAL ============ -->
+<section class="screen" id="s-eval">
+  <h2>Eval</h2>
+  <p class="sub">Score routing and retrieval for a question set against this tree. Each question gives the leaf and documents that should be found. Flat search, which skips routing and searches every leaf, is the baseline that routing has to match.</p>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:16px">
+    <div class="card">
+      <h3>Question set</h3>
+      <select><option>eval/questions.jsonl · 50 q · 16 docs</option><option>hotpotqa-dev-pooled · 500 q · 4,912 paragraphs (planned)</option><option>beir-multidomain · scifact/fiqa/nfcorpus (planned)</option></select>
+      <label>Modes</label>
+      <div class="row"><span class="pill ok">embed</span><span class="pill ok">hybrid</span><span class="pill ok">flat</span><span class="pill muted">laya</span></div>
+      <label>beam</label><input value="1, 3" class="mono">
+      <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn primary">Run eval</button></div>
+    </div>
+    <div class="card verdict">
+      <div>
+        <h3>Routed ≥ flat (R@5)</h3>
+        <div class="big">0.980 <span class="faint" style="font-size:16px">vs 1.000</span></div>
+        <div class="muted" style="font-size:13px;margin-top:4px">hybrid, beam 1 · m4 · 2026-10-15</div>
+      </div>
+      <span class="spacer"></span><span class="pill bad">FAIL</span>
+    </div>
+    <div class="card verdict">
+      <div>
+        <h3>Query p50 (embed)</h3>
+        <div class="big">247 ms</div>
+        <div class="muted" style="font-size:13px;margin-top:4px">target &lt; 250 ms · p95 not yet re-measured</div>
+      </div>
+      <span class="spacer"></span><span class="pill warn">PASS · 3 ms</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="row" style="margin-bottom:10px"><h3 style="margin:0">Results by mode</h3><span class="spacer"></span>
+      <div class="seg" id="beamSeg"><button data-b="1" class="on">beam 1</button><button data-b="3">beam 3</button></div></div>
+    <div class="tbl-wrap"><table class="t" id="evalTable">
+      <thead><tr><th>Mode</th><th class="num">R@1</th><th class="num">R@5</th><th class="num">R@10</th><th class="num">Leaf acc.</th><th class="num">Leaves / query</th><th class="num">laya calls</th><th class="num">p50 ms</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="callout" id="evalNote"></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+    <div class="card">
+      <h3>Routing confusion · hybrid, beam 1</h3>
+      <div class="tbl-wrap"><table class="conf" id="conf"></table></div>
+      <div class="muted" style="font-size:12px;margin-top:8px">Rows are the expected leaf and columns are the top-1 leaf the router reached. Numbers off the diagonal are misroutes.</div>
+    </div>
+    <div class="card">
+      <h3>Misses</h3>
+      <div class="tbl-wrap"><table class="t">
+        <thead><tr><th>Question</th><th>Expected</th><th>Routed</th></tr></thead>
+        <tbody>
+          <tr><td>What does Darwin say about the struggle for existence among plants growing in a field?</td><td class="mono">natural-history</td><td class="mono" style="color:var(--bad)">politics-economics</td></tr>
+          <tr><td>What does Victor Frankenstein study at the university of Ingolstadt?</td><td class="mono">gothic-and-detective</td><td class="mono" style="color:var(--bad)">physics-and-chemistry</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout">The questions and misroutes are illustrative. The real eval scores at the document level, so its R@1 misses are not shown per question yet.</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+const TREE = {
+  id: "library", name: "library", kind: "router",
+  desc: "A small public-domain library: classic fiction, natural science, and philosophy and political economy.",
+  children: [
+    { id: "fiction", name: "fiction", kind: "router",
+      desc: "Classic English-language novels and stories: social comedy, historical drama, sea voyages, gothic horror and detective fiction.",
+      children: [
+        { id: "novels-of-manners", name: "novels-of-manners", kind: "leaf", docs: 3, chunks: 1934, tokens: 592410,
+          desc: "Nineteenth-century English novels of courtship, marriage, class, inheritance and the French Revolution by Jane Austen and Charles Dickens." },
+        { id: "sea-adventure", name: "sea-adventure", kind: "leaf", docs: 2, chunks: 1488, tokens: 455870,
+          desc: "Seafaring adventure: whaling voyages, whales and harpoons, pirates, buried treasure and life aboard ship." },
+        { id: "gothic-and-detective", name: "gothic-and-detective", kind: "leaf", docs: 3, chunks: 1612, tokens: 493680,
+          desc: "Gothic horror and detective fiction: a created monster, a vampire count from Transylvania, and Sherlock Holmes solving crimes in London." }
+      ] },
+    { id: "science", name: "science", kind: "router",
+      desc: "Natural science for general readers: evolution and natural history, physics, relativity and chemistry.",
+      children: [
+        { id: "natural-history", name: "natural-history", kind: "leaf", docs: 2, chunks: 1351, tokens: 413720,
+          desc: "Evolution by natural selection, species and variation, geology and fossils, and a naturalist's observations from the voyage of HMS Beagle." },
+        { id: "physics-and-chemistry", name: "physics-and-chemistry", kind: "leaf", docs: 2, chunks: 642, tokens: 196560,
+          desc: "Special and general relativity, space, time, light and gravitation, and the chemistry of a candle." }
+      ] },
+    { id: "humanities", name: "humanities", kind: "router",
+      desc: "Philosophy, political theory and economics: justice, knowledge, statecraft, markets and the wealth of nations.",
+      children: [
+        { id: "philosophy", name: "philosophy", kind: "leaf", docs: 2, chunks: 1120, tokens: 342990,
+          desc: "Philosophy: Plato's Republic, Socrates' dialogues on justice, the soul, education and the ideal state." },
+        { id: "politics-economics", name: "politics-economics", kind: "leaf", docs: 2, chunks: 1956, tokens: 599154,
+          desc: "Political economy and statecraft: Adam Smith's The Wealth of Nations on the division of labour, markets and trade." }
+      ] }
+  ]
+};
+// Illustrative sibling similarity (cosine of desc_vec); high values mean the router will struggle to separate them.
+const SIBSIM = {
+  "novels-of-manners": [["gothic-and-detective", .71], ["sea-adventure", .58]],
+  "sea-adventure": [["gothic-and-detective", .60], ["novels-of-manners", .58]],
+  "gothic-and-detective": [["novels-of-manners", .71], ["sea-adventure", .60]],
+  "natural-history": [["physics-and-chemistry", .64]],
+  "physics-and-chemistry": [["natural-history", .64]],
+  "philosophy": [["politics-economics", .78]],
+  "politics-economics": [["philosophy", .78]],
+  "fiction": [["humanities", .62], ["science", .48]],
+  "science": [["humanities", .55], ["fiction", .48]],
+  "humanities": [["fiction", .62], ["science", .55]],
+  "library": []
+};
+const DOCS = {
+  "politics-economics": [
+    ["An Inquiry into the Nature and Causes of the Wealth of Nations", "folder · pg3300-wealth-of-nations.txt", 487220, 1590, "2026-10-15 09:12"],
+    ["The Prince", "folder · pg1232-the-prince.txt", 111934, 366, "2026-10-15 09:14"]
+  ]
+};
+const SOURCES = {
+  "politics-economics": [
+    ["~/corpora/gutenberg/politics", "Local folder", "none (text only)", 2, 1956, "12 min ago", ["ok", "synced"], null],
+    ["s3://strata/econ-papers/", "MinIO prefix", "mlx-ingestion-backend", 14, 0, "running", ["warn", "converting 6/14"], 43],
+    ["Treaties, scanned (upload)", "Upload", "mlx-ingestion-backend", 3, 0, "2 h ago", ["bad", "2 OCR failures"], null]
+  ]
+};
+
+const flat = []; (function walk(n, path) { n.path = [...path, n.name]; flat.push(n); (n.children || []).forEach(c => walk(c, n.path)); })(TREE, []);
+const byId = Object.fromEntries(flat.map(n => [n.id, n]));
+const agg = n => n.kind === "leaf" ? n : (n.children || []).map(agg).reduce((a, b) => ({ docs: a.docs + b.docs, chunks: a.chunks + b.chunks, tokens: a.tokens + b.tokens }), { docs: 0, chunks: 0, tokens: 0 });
+const fmt = x => x.toLocaleString("en-US");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let selected = "politics-economics";
+
+function renderTree() {
+  const li = n => `<li><div class="node ${n.id === selected ? "sel" : ""}" data-id="${n.id}">
+      <span class="ic ${n.kind[0]}">${n.kind === "router" ? "R" : "L"}</span><span class="nm">${esc(n.name)}</span>
+      <span class="ct">${n.kind === "leaf" ? fmt(n.chunks) + " ch" : (n.children || []).length + " ↳"}</span></div>
+      ${n.children ? `<ul>${n.children.map(li).join("")}</ul>` : ""}</li>`;
+  document.getElementById("tree").innerHTML = li(TREE);
+}
+function renderDetail() {
+  const n = byId[selected], a = agg(n), sims = SIBSIM[n.id] || [];
+  const parent = n.path.length > 1 ? n.path[n.path.length - 2] : "—";
+  document.getElementById("detail").innerHTML = `
+    <div class="crumbs">${n.path.join(" / ")}</div>
+    <div class="row"><h2 style="margin:0">${esc(n.name)}</h2><span class="pill ${n.kind}">${n.kind}</span><span class="spacer"></span>
+      ${n.kind === "router" ? `<button class="btn sm">+ Router</button><button class="btn sm">+ Leaf</button>` : `<button class="btn sm" data-goto="sources">Sources →</button>`}
+      <button class="btn sm" data-goto="play">Test route →</button></div>
+    <div class="stats" style="margin-top:14px">
+      <div class="stat"><b>${fmt(a.docs)}</b><span>documents</span></div>
+      <div class="stat"><b>${fmt(a.chunks)}</b><span>chunks</span></div>
+      <div class="stat"><b>${(a.tokens / 1e6).toFixed(2)}M</b><span>tokens</span></div>
+      <div class="stat"><b>${n.kind === "router" ? n.children.length : parent}</b><span>${n.kind === "router" ? "children" : "parent"}</span></div>
+    </div>
+    <label>Name</label><input value="${esc(n.name)}">
+    <label>Description <span class="faint">· what the router matches queries against (α = 0.7 description, 0.3 content)</span></label>
+    <textarea>${esc(n.desc)}</textarea>
+    <label>Kind</label>
+    <select ${n.kind === "router" || a.docs ? "disabled" : ""}><option ${n.kind === "router" ? "selected" : ""}>router: routes to child stores</option><option ${n.kind === "leaf" ? "selected" : ""}>leaf: holds chunks</option></select>
+    <h3 style="margin-top:20px">Overlap with siblings</h3>
+    ${sims.length ? `<table class="sim">${sims.map(([s, v]) => `<tr><td style="width:180px" class="mono">${s}</td><td><div class="meter"><i class="${v >= .7 ? "hot" : ""}" style="width:${v * 100}%"></i></div></td><td class="n mono">${v.toFixed(2)}</td></tr>`).join("")}</table>
+      ${sims.some(s => s[1] >= .7) ? `<div class="callout" style="border-left:3px solid var(--warn)">The description is very close to a sibling's. Queries that fit either one will make the router ambiguous, and hybrid mode will then ask laya. Make the descriptions more distinct.</div>` : ""}`
+      : `<div class="muted">The root has no siblings.</div>`}
+    <div class="row" style="margin-top:18px"><button class="btn danger sm" ${a.docs ? "disabled title='delete is RESTRICT while children or documents exist'" : ""}>Delete</button><span class="spacer"></span><button class="btn">Revert</button><button class="btn primary">Save &amp; re-embed</button></div>`;
+}
+
+function renderSources() {
+  const leaves = flat.filter(n => n.kind === "leaf");
+  const sel = document.getElementById("leafSel");
+  sel.innerHTML = leaves.map(l => `<option value="${l.id}" ${l.id === selected ? "selected" : ""}>${l.path.join(" / ")}</option>`).join("");
+  const id = byId[selected].kind === "leaf" ? selected : "politics-economics";
+  const n = byId[id];
+  const srcs = SOURCES[id] || [[`~/corpora/gutenberg/${id}`, "Local folder", "none (text only)", n.docs, n.chunks, "12 min ago", ["ok", "synced"], null]];
+  document.getElementById("srcStats").innerHTML = `
+    <div class="stat"><b>${srcs.length}</b><span>sources</span></div>
+    <div class="stat"><b>${fmt(n.docs)}</b><span>documents</span></div>
+    <div class="stat"><b>${fmt(n.chunks)}</b><span>chunks</span></div>
+    <div class="stat"><b>${(n.tokens / 1e6).toFixed(2)}M</b><span>tokens</span></div>`;
+  document.querySelector("#srcTable tbody").innerHTML = srcs.map(([s, t, c, d, ch, when, [k, st], p]) => `<tr>
+    <td class="mono">${esc(s)}${p != null ? `<div class="prog"><i style="width:${p}%"></i></div>` : ""}</td><td>${t}</td><td class="muted">${c}</td>
+    <td class="num">${d}</td><td class="num">${fmt(ch)}</td><td class="muted">${when}</td><td><span class="pill ${k}">${st}</span></td>
+    <td><button class="btn sm">Sync</button></td></tr>`).join("");
+  const docs = DOCS[id] || [[`(${n.docs} documents)`, srcs[0][0], n.tokens, n.chunks, "2026-10-15"]];
+  document.querySelector("#docTable tbody").innerHTML = docs.map(([t, s, tok, ch, when]) => `<tr>
+    <td>${esc(t)}</td><td class="mono muted">${esc(s)}</td><td class="num">${fmt(tok)}</td><td class="num">${fmt(ch)}</td><td class="muted">${when}</td>
+    <td><button class="btn sm">Chunks</button></td></tr>`).join("");
+}
+
+// Playground: illustrative route trace for the acceptance spot query.
+const ROUTES = {
+  hybrid: { meta: "hybrid · laya consulted at humanities", leaves: 1, levels: [
+    { at: "library", cands: [["humanities", .58, 1], ["science", .41, 0], ["fiction", .33, 0]], note: "" },
+    { at: "humanities", cands: [["politics-economics", .61, 1], ["philosophy", .57, 0]], note: "ambiguous (top1 − top2 = 0.04 < 0.05) → laya: politics-economics p=0.91" } ],
+    t: { embed: 27, route: 742, search: 58, rerank: 196 } },
+  embed: { meta: "embed · 1 leaf", leaves: 1, levels: [
+    { at: "library", cands: [["humanities", .58, 1], ["science", .41, 0], ["fiction", .33, 0]], note: "" },
+    { at: "humanities", cands: [["politics-economics", .61, 1], ["philosophy", .57, 0]], note: "" } ],
+    t: { embed: 27, route: 0, search: 58, rerank: 196 } },
+  laya: { meta: "laya · 2 calls", leaves: 1, levels: [
+    { at: "library", cands: [["humanities", .94, 1], ["science", .04, 0], ["fiction", .02, 0]], note: "laya probabilities (follow ≥ 0.15)" },
+    { at: "humanities", cands: [["politics-economics", .91, 1], ["philosophy", .09, 0]], note: "laya probabilities (follow ≥ 0.15)" } ],
+    t: { embed: 27, route: 1480, search: 58, rerank: 196 } },
+  flat: { meta: "flat · all 7 leaves", leaves: 7, levels: [], t: { embed: 27, route: 0, search: 166, rerank: 202 } }
+};
+const RESULTS = [
+  ["humanities / politics-economics", "Wealth of Nations", "…ten persons, therefore, could make among them upwards of forty-eight thousand pins in a day. Each person, therefore, making a tenth part of forty-eight thousand pins, might be considered as making four thousand eight hundred pins in a day…", .83, 14.2, .971],
+  ["humanities / politics-economics", "Wealth of Nations", "…a workman not educated to this business… could scarce, perhaps, with his utmost industry, make one pin in a day, and certainly could not make twenty…", .79, 11.8, .902],
+  ["humanities / politics-economics", "Wealth of Nations", "…One man draws out the wire, another straights it, a third cuts it, a fourth points it, a fifth grinds it at the top for receiving the head…", .77, 9.4, .655]
+];
+const TCOL = { embed: "#7a8aa3", route: "var(--router)", search: "var(--accent)", rerank: "var(--leaf)" };
+function renderPlay(mode) {
+  const r = ROUTES[mode];
+  document.getElementById("routeMeta").textContent = r.meta;
+  document.getElementById("route").innerHTML = r.levels.length ? r.levels.map((l, i) => `<div class="level">
+      <h4>Level ${i + 1} · at <span class="mono">${l.at}</span></h4>
+      ${l.cands.map(([nm, s, p]) => `<div class="cand ${p ? "pick" : ""}"><span class="nm mono">${p ? "→ " : ""}${nm}</span>
+        <div class="meter"><i style="width:${s * 100}%"></i></div><span class="n">${s.toFixed(2)}</span><span class="why faint" style="font-size:11px">${p ? "followed" : s >= .35 ? "≥ min, beam cut" : "below min"}</span></div>`).join("")}
+      ${l.note ? `<div class="faint" style="font-size:12px;margin-top:4px">${l.note}</div>` : ""}</div>`).join("")
+    : `<div class="muted">No routing: searched all 7 leaves (10,103 chunks).</div>`;
+  const tot = Object.values(r.t).reduce((a, b) => a + b, 0);
+  document.getElementById("timing").innerHTML = Object.entries(r.t).filter(([, v]) => v > 0).map(([k, v]) => `<div style="flex:${v};background:${TCOL[k]}">${v / tot > .12 ? v + " ms" : ""}</div>`).join("");
+  document.getElementById("timingLegend").innerHTML = Object.entries(r.t).map(([k, v]) => `<span><i style="background:${TCOL[k]}"></i>${k} ${v} ms</span>`).join("") + `<span style="margin-left:auto"><b>total ${tot} ms</b></span>`;
+  document.getElementById("results").innerHTML = RESULTS.map(([p, d, t, dn, lx, rr], i) => `<div class="result">
+      <div class="row"><span class="mono faint">[${i + 1}]</span><span class="path">${p}</span><span class="faint" style="font-size:12px">· ${d}</span></div>
+      <p>${t}</p><div class="scores"><span>dense ${dn.toFixed(2)}</span><span>lexical ${lx.toFixed(1)}</span><span>rerank ${rr.toFixed(3)}</span></div></div>`).join("");
+}
+
+// Eval: beam 3 rows are the measured acceptance numbers; beam 1 rows are the acceptance re-run (hybrid 0.980 / embed 0.960 / flat 1.000 at R@5), other cells illustrative.
+const EVAL = {
+  "3": { rows: [["embed", .960, 1.000, 1.000, "1.000", "7.0", "0", 398], ["hybrid", .960, 1.000, 1.000, "1.000", "7.0", "47", 398], ["flat", .960, 1.000, 1.000, "—", "7.0", "—", 398]],
+    note: "At beam 3 routing reaches all 7 leaves, so embed and hybrid end up searching the same set as flat. A leaf accuracy of 1.000 is therefore meaningless: it only says the right leaf was among all of them. The test is vacuous at this setting." },
+  "1": { rows: [["embed", .900, .960, .960, "0.960", "1.3", "0", 240], ["hybrid", .920, .980, .980, "0.980", "1.6", "31", 286], ["flat", .960, 1.000, 1.000, "—", "7.0", "—", 398]],
+    note: "At beam 1 routing does narrow the search, to 1–2 leaves instead of 7, and latency drops. But R@5 falls below flat, so routing costs recall. This is the measurement to improve. HotpotQA and BEIR give more questions per leaf." }
+};
+function renderEval(b) {
+  const e = EVAL[b], best = Math.max(...e.rows.map(r => r[2]));
+  document.querySelector("#evalTable tbody").innerHTML = e.rows.map(([m, r1, r5, r10, la, lv, ly, p50]) => `<tr>
+    <td><b>${m}</b></td><td class="num">${r1.toFixed(3)}</td><td class="num" style="${r5 < best ? "color:var(--bad);font-weight:600" : ""}">${r5.toFixed(3)}</td>
+    <td class="num">${r10.toFixed(3)}</td><td class="num">${la}</td><td class="num">${lv}</td><td class="num">${ly}</td><td class="num">${p50}</td></tr>`).join("");
+  document.getElementById("evalNote").textContent = e.note;
+}
+function renderConf() {
+  const L = flat.filter(n => n.kind === "leaf").map(n => n.name);
+  const M = [[7,0,0,0,0,0,0],[0,6,0,0,0,0,0],[0,0,7,0,1,0,0],[0,0,0,7,0,0,1],[0,0,0,0,7,0,0],[0,0,0,0,0,7,0],[0,0,0,0,0,0,7]];
+  const short = s => s.replace("novels-of-manners", "manners").replace("gothic-and-detective", "gothic").replace("physics-and-chemistry", "physics").replace("natural-history", "nat-hist").replace("politics-economics", "pol-econ").replace("sea-adventure", "sea");
+  document.getElementById("conf").innerHTML = `<tr><th></th>${L.map(l => `<th class="rot">${short(l)}</th>`).join("")}</tr>` +
+    M.map((row, i) => `<tr><th style="text-align:right">${short(L[i])}</th>${row.map((v, j) => {
+      const bg = v === 0 ? "var(--panel-2)" : i === j ? `color-mix(in srgb, var(--leaf) ${25 + v * 9}%, var(--panel))` : `color-mix(in srgb, var(--bad) 45%, var(--panel))`;
+      return `<td style="background:${bg}">${v || ""}</td>`; }).join("")}</tr>`).join("");
+}
+
+function show(s) {
+  document.querySelectorAll(".screen").forEach(x => x.classList.toggle("on", x.id === "s-" + s));
+  document.querySelectorAll("#nav button").forEach(x => x.classList.toggle("on", x.dataset.s === s));
+  if (s === "sources") renderSources();
+  try { history.replaceState(null, "", "#" + s); } catch (e) {}
+}
+document.addEventListener("click", e => {
+  const nav = e.target.closest("#nav button"); if (nav) return show(nav.dataset.s);
+  const go = e.target.closest("[data-goto]"); if (go) { e.preventDefault(); return show(go.dataset.goto); }
+  const node = e.target.closest(".node"); if (node) { selected = node.dataset.id; renderTree(); renderDetail(); return; }
+  const m = e.target.closest("#mode button"); if (m) { document.querySelectorAll("#mode button").forEach(b => b.classList.toggle("on", b === m)); return renderPlay(m.dataset.m); }
+  const b = e.target.closest("#beamSeg button"); if (b) { document.querySelectorAll("#beamSeg button").forEach(x => x.classList.toggle("on", x === b)); return renderEval(b.dataset.b); }
+  const t = e.target.closest(".type"); if (t) document.querySelectorAll(".type").forEach(x => x.classList.toggle("on", x === t));
+});
+document.getElementById("leafSel").addEventListener("change", e => { selected = e.target.value; renderSources(); renderTree(); renderDetail(); });
+
+renderTree(); renderDetail(); renderPlay("hybrid"); renderEval("1"); renderConf();
+const h = location.hash.slice(1); if (["tree", "sources", "play", "eval"].includes(h)) show(h);
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+out/*.json
+out/*.npy
+out/*/*.json
+out/*/*.npy

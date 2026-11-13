@@ -1,0 +1,67 @@
+[package]
+license = "Apache-2.0"
+name = "strata-rag"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Multi-layer routed RAG: a tree of router/leaf stores on Postgres + pgvector; embeddings and reranking from HTTP providers"
+
+[[bin]]
+name = "strata"
+path = "src/main.rs"
+
+[features]
+default = []
+
+[dependencies]
+tokio = { version = "1.53.3", features = ["full"] }
+axum = "0.8.9"
+sqlx = { version = "0.9.0", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate",
+    "macros",
+    "json",
+] }
+pgvector = { version = "0.4.2", features = ["sqlx", "serde"] }
+uuid = { version = "1.28.0", features = ["v7", "serde"] }
+clap = { version = "4.6.7", features = ["derive", "env"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+thiserror = "2.0.21"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+reqwest = { version = "0.13.5", features = ["json"] }
+sha2 = "0.11.1"
+subtle = "2.6.1"
+unicode-normalization = "0.1.25"
+unicode-segmentation = "1.13.3"
+tower-http = { version = "0.7.1", features = ["trace", "timeout", "limit"] }
+tokenizers = "0.23.1"
+hf-hub = { version = "1.0.0", features = ["blocking"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["alloc"] }
+# providers.toml (deployment provider policy + dev defaults), same crate/version as strata-ingest.
+toml = "1.1.2"
+# Tenant provider keys at rest: AES-256-GCM, key from STRATA_PROVIDER_KEY (base64).
+aes-gcm = "=0.11.1"
+base64 = "0.23.1"
+# SSRF checks parse base_url exactly as reqwest does (same crate + version as its dependency).
+url = "2.5.8"
+redis = { version = "1.7.1", features = ["tokio-comp", "streams", "aio", "connection-manager"] }
+lru = "0.18.5"
+# GET /metrics: Prometheus text exposition (recorder only; no built-in HTTP listener).
+metrics = "=0.24.6"
+metrics-exporter-prometheus = { version = "=0.18.3", default-features = false }
+
+[dev-dependencies]
+testcontainers-modules = { version = "0.15.0", features = ["postgres", "redis"] }
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1.5"
+libc = "0.2.190"
+
+# Dependencies (tokenizers) are slow unoptimised; our own crate stays debug.
+[profile.dev.package."*"]
+opt-level = 3

@@ -1,0 +1,96 @@
+{
+  "corpus_dir": "corpus",
+  "root": {
+    "name": "library",
+    "kind": "router",
+    "description": "A small public-domain library: classic fiction, natural science, and philosophy and political economy.",
+    "children": [
+      {
+        "name": "fiction",
+        "kind": "router",
+        "description": "Classic English-language novels and stories: social comedy, historical drama, sea voyages, gothic horror and detective fiction.",
+        "children": [
+          {
+            "name": "novels-of-manners",
+            "kind": "leaf",
+            "description": "Nineteenth-century English novels: Jane Austen's Pride and Prejudice (Elizabeth Bennet, Mr Darcy, courtship, marriage and class), Charles Dickens's Great Expectations (the orphan Pip, the convict Magwitch, Miss Havisham and a secret benefactor) and A Tale of Two Cities (London and Paris in the French Revolution).",
+            "files": [
+              "pg1342-pride-and-prejudice.txt",
+              "pg1400-great-expectations.txt",
+              "pg98-a-tale-of-two-cities.txt"
+            ]
+          },
+          {
+            "name": "sea-adventure",
+            "kind": "leaf",
+            "description": "Seafaring adventure: Herman Melville's Moby-Dick (Captain Ahab's whaling voyage on the Pequod after the white whale, harpoons and whaling lore) and Robert Louis Stevenson's Treasure Island (Jim Hawkins, Long John Silver, pirates and buried treasure).",
+            "files": [
+              "pg2701-moby-dick.txt",
+              "pg120-treasure-island.txt"
+            ]
+          },
+          {
+            "name": "gothic-and-detective",
+            "kind": "leaf",
+            "description": "Gothic horror and detective fiction: Mary Shelley's Frankenstein (Victor Frankenstein and the creature he makes, framed by Robert Walton's letters from an Arctic voyage), Bram Stoker's Dracula (the vampire count from Transylvania) and Arthur Conan Doyle's The Adventures of Sherlock Holmes (Holmes and Watson solving crimes in London).",
+            "files": [
+              "pg84-frankenstein.txt",
+              "pg345-dracula.txt",
+              "pg1661-the-adventures-of-sherlock-holmes.txt"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "science",
+        "kind": "router",
+        "description": "Natural science for general readers: evolution and natural history, physics, relativity and chemistry.",
+        "children": [
+          {
+            "name": "natural-history",
+            "kind": "leaf",
+            "description": "Charles Darwin's On the Origin of Species (evolution by natural selection, variation, the struggle for existence, geology and fossils) and The Voyage of the Beagle (a naturalist's observations in South America and the Galapagos).",
+            "files": [
+              "pg1228-on-the-origin-of-species.txt",
+              "pg944-the-voyage-of-the-beagle.txt"
+            ]
+          },
+          {
+            "name": "physics-and-chemistry",
+            "kind": "leaf",
+            "description": "Albert Einstein's Relativity (special and general relativity, space, time, light and gravitation) and Michael Faraday's The Chemical History of a Candle (the chemistry of combustion in a burning candle).",
+            "files": [
+              "pg5001-relativity.txt",
+              "pg14474-chemical-history-of-a-candle.txt"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "humanities",
+        "kind": "router",
+        "description": "Philosophy, political theory and economics: justice, knowledge, statecraft, markets and the wealth of nations.",
+        "children": [
+          {
+            "name": "philosophy",
+            "kind": "leaf",
+            "description": "Philosophy: Plato's Republic, Socrates' dialogues on justice, the soul, education and the ideal city ruled by philosopher-kings, the theory of Forms and the allegories of the sun, the divided line and the cave; and Bertrand Russell's The Problems of Philosophy on appearance and reality, sense-data, knowledge and induction.",
+            "files": [
+              "pg1497-the-republic.txt",
+              "pg5827-the-problems-of-philosophy.txt"
+            ]
+          },
+          {
+            "name": "politics-economics",
+            "kind": "leaf",
+            "description": "Political economy and statecraft: Adam Smith's The Wealth of Nations on the division of labour, trade, prices, wages and taxation; and Machiavelli's The Prince on how princes acquire, rule and keep principalities, fortune and virtue, armies and cruelty.",
+            "files": [
+              "pg3300-the-wealth-of-nations.txt",
+              "pg1232-the-prince.txt"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

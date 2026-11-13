@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg18
+    container_name: strata-rag-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: strata_rag
+      POSTGRES_USER: strata_rag
+      POSTGRES_PASSWORD: ${STRATA_DB_PASSWORD:-strata_rag}
+      PGPORT: "5440"
+    ports:
+      - "127.0.0.1:5440:5440"
+    volumes:
+      # PG18 images keep PGDATA under /var/lib/postgresql/18/docker; mount the parent.
+      - strata-rag-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5440 -U strata_rag -d strata_rag"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  strata-rag-pgdata:

@@ -1,0 +1,16 @@
+# Build outputs and other checkouts.
+target/
+.worktrees/
+.git/
+.github/
+# Large eval data (12 MB corpus) is not needed to build or serve.
+eval/corpus/
+# Secrets and local env files never enter the build context.
+.env
+*.env
+# Not part of the build.
+docs/
+deploy/
+docker-compose.yml
+Dockerfile
+.dockerignore

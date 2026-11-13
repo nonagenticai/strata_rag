@@ -1,0 +1,12 @@
+-- Approximate nearest-neighbour index on chunk embeddings (spec §8.3). Until now every dense search
+-- was an exact scan of its leaves' chunks, which is linear in the leaf size.
+--
+-- The dense search runs with `hnsw.iterative_scan = relaxed_order` (see `db::search`): the index
+-- yields neighbours BEFORE the tenant / store / document filters, and without the iterative scan a
+-- filter that passes 3% of the rows would return ~3% of `hnsw.ef_search` candidates. The planner
+-- still picks the exact scan (btree on store_id + sort) when that is cheaper, as it is for a small
+-- leaf, so this index only ever replaces a scan it beats.
+--
+-- Not CONCURRENTLY: migrations run in a transaction, and the table is small enough at the time of
+-- writing that the build lock is brief. The column is vector(1024), within HNSW's 2000-dim limit.
+CREATE INDEX chunks_embedding_hnsw ON chunks USING hnsw (embedding vector_cosine_ops);
