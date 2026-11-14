@@ -171,13 +171,18 @@ impl KeyCipher {
 mod tests {
     use super::*;
 
+    /// A fresh random key per call: no key material is committed to the tree.
+    fn test_key() -> [u8; 32] {
+        <[u8; 32]>::generate()
+    }
+
     fn t(n: u128) -> Tenant {
         Tenant::new(uuid::Uuid::from_u128(n)).unwrap()
     }
 
     #[test]
     fn round_trip_with_a_fresh_nonce_per_write() {
-        let c = KeyCipher::new(&[7u8; 32]);
+        let c = KeyCipher::new(&test_key());
         let key = Secret::new("sk-round-trip-123");
         let a = c.seal(t(1), Capability::Embed, &key).unwrap();
         let b = c.seal(t(1), Capability::Embed, &key).unwrap();
@@ -194,7 +199,7 @@ mod tests {
 
     #[test]
     fn a_ciphertext_moved_to_another_tenant_or_capability_does_not_open() {
-        let c = KeyCipher::new(&[7u8; 32]);
+        let c = KeyCipher::new(&test_key());
         let s = c.seal(t(1), Capability::Embed, &Secret::new("k")).unwrap();
         assert!(c.open(t(2), Capability::Embed, &s).is_err());
         assert!(c.open(t(1), Capability::Rerank, &s).is_err());
@@ -210,7 +215,7 @@ mod tests {
 
     #[test]
     fn a_store_key_opens_only_for_its_store_and_never_as_a_tenant_key() {
-        let c = KeyCipher::new(&[7u8; 32]);
+        let c = KeyCipher::new(&test_key());
         let store = uuid::Uuid::from_u128(77);
         let s = c
             .seal_store(t(1), store, Capability::Embed, &Secret::new("sk-store"))
@@ -246,10 +251,10 @@ mod tests {
 
     #[test]
     fn a_wrong_key_does_not_open_and_the_error_holds_no_secret() {
-        let s = KeyCipher::new(&[7u8; 32])
+        let s = KeyCipher::new(&test_key())
             .seal(t(1), Capability::Rerank, &Secret::new("sk-wrong-key-456"))
             .unwrap();
-        let err = KeyCipher::new(&[8u8; 32])
+        let err = KeyCipher::new(&test_key())
             .open(t(1), Capability::Rerank, &s)
             .unwrap_err()
             .to_string();
@@ -273,7 +278,7 @@ mod tests {
 
     #[test]
     fn debug_prints_no_key_material() {
-        let c = KeyCipher::new(&[9u8; 32]);
+        let c = KeyCipher::new(&test_key());
         assert_eq!(format!("{c:?}"), "KeyCipher(***)");
         let s = c.seal(t(1), Capability::Embed, &Secret::new("k")).unwrap();
         assert!(!format!("{s:?}").contains("nonce: ["), "{s:?}");

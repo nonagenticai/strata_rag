@@ -15,7 +15,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, Request, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
-use common::{OTHER_TENANT, TENANT, TestDb, other, test_config, tn};
+use common::{OTHER_TENANT, TENANT, TestDb, other, test_config, test_key, tn};
 use serde_json::{Value, json};
 use strata_rag::db::stores::{NewStore, StoreKind};
 use strata_rag::engine::Engine;
@@ -24,8 +24,6 @@ use strata_rag::providers::{Deployment, KeyCipher, LaneLimits, Providers};
 use strata_rag::query::QueryRequest;
 use tower::ServiceExt;
 use uuid::Uuid;
-
-const KEY: [u8; 32] = [42u8; 32];
 
 /// A mock provider: counts calls, records the Authorization header of each, and can be told to
 /// answer another status, other dims, or vectors that are not unit length.
@@ -214,7 +212,7 @@ async fn registry(db: &TestDb, toml: &str, cipher: bool) -> Providers {
     Providers::registry(
         db.pool.clone(),
         dep,
-        cipher.then(|| KeyCipher::new(&KEY)),
+        cipher.then(|| KeyCipher::new(&test_key())),
         LaneLimits::default(),
     )
     .await
@@ -835,7 +833,7 @@ async fn keys_need_strata_provider_key() {
     let wrong = Providers::registry(
         db.pool.clone(),
         dep,
-        Some(KeyCipher::new(&[1u8; 32])),
+        Some(KeyCipher::new(&test_key())),
         LaneLimits::default(),
     )
     .await
