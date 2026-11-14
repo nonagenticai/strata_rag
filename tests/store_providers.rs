@@ -19,7 +19,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, Request, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
-use common::{OTHER_TENANT, TENANT, TestDb, other, test_config, tn};
+use common::{OTHER_TENANT, TENANT, TestDb, other, test_config, test_key, tn};
 use pgvector::Vector;
 use serde_json::{Value, json};
 use strata_rag::db::stores::{NewStore, StoreKind};
@@ -30,7 +30,6 @@ use strata_rag::vecmath::cosine;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-const KEY: [u8; 32] = [42u8; 32];
 const MODEL_A: &str = "acme/a@1024";
 const MODEL_B: &str = "acme/b@1024";
 
@@ -236,7 +235,7 @@ async fn setup() -> Setup {
     let providers = Providers::registry(
         db.pool.clone(),
         dep,
-        Some(KeyCipher::new(&KEY)),
+        Some(KeyCipher::new(&test_key())),
         LaneLimits::default(),
     )
     .await
