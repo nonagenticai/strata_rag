@@ -628,6 +628,15 @@ evaluated tree: each is listed), 404 for a `question_ids` entry or `root_id` tha
 tenant's (all answered by the `POST` itself, before any run is stored), 409 `eval_running` while
 another eval of the tenant runs (the built-in eval's own refusal stays 409 `conflict`).
 
+## Licensing
+
+The code in this repository is Apache-2.0 and needs no licence key to build, test or run.
+Licence-token authentication is **optional**: it is off while `STRATA_LICENSE_INTROSPECT_URL`
+is unset, and static `STRATA_API_TOKENS` keep working. With the URL set, an unknown bearer is
+introspected against the licences service and denied if introspection fails.
+
+The licensing stack is public too — [`licenses`](https://github.com/nonagenticai/licenses) (entitlements, plans and tokens) and [`license-authz`](https://github.com/nonagenticai/license-authz) (the Envoy `ext_authz` enforcement point). Neither is required to run this code.
+
 ## License
 
 Apache 2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
