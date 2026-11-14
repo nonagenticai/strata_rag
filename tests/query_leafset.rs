@@ -14,7 +14,7 @@ use axum::body::{Body, to_bytes};
 use axum::extract::State;
 use axum::http::{Request, StatusCode};
 use axum::routing::post;
-use common::{TENANT, other, test_config, test_engine, tn};
+use common::{TENANT, other, test_config, test_engine, test_key, tn};
 use serde_json::{Value, json};
 use strata_rag::db::stores::{NewStore, StoreKind};
 use strata_rag::engine::Engine;
@@ -234,7 +234,6 @@ async fn root_ids_route_under_each_root_and_union_the_leaves() {
 
 // ---------- two embedding models ----------
 
-const KEY: [u8; 32] = [42u8; 32];
 const MODEL_A: &str = "acme/a@1024";
 const MODEL_B: &str = "acme/b@1024";
 const SEA: &str = "The harpoon struck the white whale. The crew cheered on the deck of the ship.";
@@ -316,7 +315,7 @@ async fn mixed() -> (Arc<Engine>, common::TestDb, [Uuid; 4]) {
     let providers = Providers::registry(
         db.pool.clone(),
         dep,
-        Some(KeyCipher::new(&KEY)),
+        Some(KeyCipher::new(&test_key())),
         LaneLimits::default(),
     )
     .await

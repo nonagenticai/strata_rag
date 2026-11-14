@@ -14,8 +14,15 @@ use testcontainers_modules::testcontainers::runners::AsyncRunner;
 use testcontainers_modules::testcontainers::{ContainerAsync, ImageExt};
 use tokio::sync::OnceCell;
 
+use aes_gcm::aead::Generate;
+
 const IMAGE: &str = "pgvector/pgvector";
 const TAG: &str = "0.8.7-pg18";
+
+/// A fresh random 32-byte key per call: integration tests never hard-code key material.
+pub fn test_key() -> [u8; 32] {
+    <[u8; 32]>::generate()
+}
 
 /// A fresh Postgres 18 + pgvector database with migrations applied, on the binary's shared server.
 pub struct TestDb {
