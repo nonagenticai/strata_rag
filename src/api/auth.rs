@@ -148,6 +148,8 @@ impl Refusal {
     }
 }
 
+/// SHA-256 of a bearer token: a fixed-length, constant-time-compared lookup key for
+/// high-entropy machine-minted tokens. This is not password storage; no KDF applies.
 fn digest(s: &str) -> [u8; 32] {
     Sha256::digest(s.as_bytes()).into()
 }
