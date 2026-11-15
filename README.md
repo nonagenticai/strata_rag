@@ -1,7 +1,88 @@
 # strata-rag
 
+[![CI](https://github.com/nonagenticai/strata_rag/actions/workflows/ci-public.yml/badge.svg)](https://github.com/nonagenticai/strata_rag/actions/workflows/ci-public.yml)
+[![Release](https://img.shields.io/github/v/release/nonagenticai/strata_rag)](https://github.com/nonagenticai/strata_rag/releases)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Multi-layer routed RAG: a tree of router/leaf stores on Postgres + pgvector. strata runs no model:
 embeddings (bge-m3, 1024 dims) and reranking come from HTTP providers, so it is a CPU-only service.
+Every store belongs to one tenant; a query routes down the tree from a root through router stores to
+leaves, and a store may bind its own embed, rerank and chat providers.
+
+| | |
+|---|---|
+| **Runtime** | Rust — edition 2024, toolchain 1.99.1 (`Cargo.toml`, `rust-toolchain.toml`) |
+| **Depends on** | PostgreSQL 18 + pgvector (`docker-compose.yml`); an embed provider (OpenAI dialect) and a rerank provider (Cohere v2) over HTTP; optional Redis for metering; optional chat provider for `/api/ask` |
+| **Runs on** | Docker (CI publishes to GHCR) or Kubernetes; a native binary for local development; API on port 8092 |
+
+## Quick start
+
+```bash
+git clone https://github.com/nonagenticai/strata_rag.git
+cd strata_rag
+docker compose up -d            # PostgreSQL 18 + pgvector on 127.0.0.1:5440
+cargo build --locked
+```
+
+`strata serve` refuses to start without a `providers.toml`; a minimal dev one (replace the base
+URLs and the key with a real provider):
+
+```toml
+# providers.toml
+region = "eu"
+mode = "dev"
+[policy]
+allowed_dialects = ["openai", "cohere"]
+
+[default.embed]
+base_url = "https://api.example.eu/v1"
+dialect = "openai"
+model = "BAAI/bge-m3"
+dims = 1024
+api_key = "env:STRATA_DEV_API_KEY"
+regions = ["eu"]
+zdr = true
+
+[default.rerank]
+base_url = "https://api.example.eu/v2"
+dialect = "cohere"
+model = "BAAI/bge-reranker-v2-m3"
+api_key = "env:STRATA_DEV_API_KEY"
+regions = ["eu"]
+zdr = true
+```
+
+```bash
+export STRATA_DEV_API_KEY=...                     # your provider key
+STRATA_PROVIDERS_FILE=$PWD/providers.toml ./target/debug/strata serve
+```
+
+The database URL defaults to the `docker compose` container, so this local run needs no
+`STRATA_DATABASE_URL`. The API listens on `127.0.0.1:8092` (`STRATA_BIND`).
+
+## Usage
+
+Health is the only unauthenticated route; with the dev providers above reachable it answers:
+
+```bash
+curl -s http://127.0.0.1:8092/health
+{"db":"ok","embed":"ok","rerank":"ok","chat":"unconfigured","laya":"unconfigured"}
+```
+
+Each component is `ok`, `down` (with an `*_error` class), `busy`, or `unconfigured`. The CLI runs
+the same engine directly against the database:
+
+```bash
+TENANT=0190f1b2-0000-7000-8000-000000000001
+./target/debug/strata store add --tenant "$TENANT" --kind leaf --name notes \
+  --description "Personal notes"
+# created leaf notes <store-uuid>
+./target/debug/strata ingest --tenant "$TENANT" notes notes.txt
+./target/debug/strata query --tenant "$TENANT" "what did I write about ports?"
+```
+
+`strata store ls` prints the tree; `strata query --json` prints the full `QueryResponse`;
+`strata ask` generates an answer when a chat provider is configured.
 
 ## Deploy
 
@@ -18,6 +99,8 @@ Never use port 8000.
 
 **Cluster:** CI builds and publishes `ghcr.io/<owner>/strata-rag`; the deployment manifests live in
 the operator's own gitops repository, not here.
+
+## Configuration
 
 ### Providers
 
@@ -244,7 +327,9 @@ production), never a tenant's registration.
 | `STRATA_PLATFORM_OWNER` / `STRATA_PLATFORM_LICENSES` / `STRATA_PLATFORM_PENALTY` | Platform knowledge: see [Tenants](#tenants) and [Platform knowledge](#platform-knowledge). |
 | `METERING_STREAM` | Stream the cost events go to. Default `billing:costs`; set it explicitly in the deployment (billing's emitter guide). |
 
-Other tuning knobs and their defaults are in `.env.example`.
+Other tuning knobs are in `.env.example`.
+
+## Reference
 
 ### Docker
 
@@ -627,6 +712,33 @@ Errors: 409 `question_exists` (same query, case-insensitive), 422 `too_many_ques
 evaluated tree: each is listed), 404 for a `question_ids` entry or `root_id` that is not the
 tenant's (all answered by the `POST` itself, before any run is stored), 409 `eval_running` while
 another eval of the tenant runs (the built-in eval's own refusal stays 409 `conflict`).
+
+## Development
+
+```bash
+cargo build --locked
+cargo test --locked          # integration tests start an ephemeral pgvector Postgres
+cargo test --doc --locked
+cargo fmt --all -- --check
+cargo clippy --all-targets --locked -- -D warnings
+```
+
+The integration tests use Docker (testcontainers) unless `TEST_DATABASE_URL` points at a
+pgvector-enabled database. CI (`.github/workflows/ci-public.yml`) runs the same checks — `cargo fmt`,
+`clippy -D warnings`, nextest plus doctests, `cargo audit` — and the two tree scanners (secret scan
+and private-reference scan).
+
+## Security
+
+Report vulnerabilities privately through the repository's Security tab — see
+[`SECURITY.md`](SECURITY.md). Do not open a public issue for a security problem.
+
+## Contributing
+
+Issues and pull requests are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for this
+repository's workflow and the
+[organisation-wide rules](https://github.com/nonagenticai/.github/blob/main/CONTRIBUTING.md);
+test and lint commands are in **Development** above. Commits carry DCO sign-off.
 
 ## Licensing
 
