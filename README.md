@@ -11,7 +11,7 @@ leaves, and a store may bind its own embed, rerank and chat providers.
 
 | | |
 |---|---|
-| **Runtime** | Rust — edition 2024, toolchain 1.99.1 (`Cargo.toml`, `rust-toolchain.toml`) |
+| **Runtime** | Rust — edition 2024, toolchain 1.100.0 (`Cargo.toml`, `rust-toolchain.toml`) |
 | **Depends on** | PostgreSQL 18 + pgvector (`docker-compose.yml`); an embed provider (OpenAI dialect) and a rerank provider (Cohere v2) over HTTP; optional Redis for metering; optional chat provider for `/api/ask` |
 | **Runs on** | Docker (CI publishes to GHCR) or Kubernetes; a native binary for local development; API on port 8092 |
 

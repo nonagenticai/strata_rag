@@ -6,7 +6,7 @@
 # pinned Rust toolchain installed by rustup. That keeps builder and runtime on the same
 # glibc, which the tokenizers (C++ esaxx, onig) / aws-lc native builds expect.
 # Pin both FROM lines by digest when promoting this into a pipeline.
-ARG RUST_TOOLCHAIN=1.99.1
+ARG RUST_TOOLCHAIN=1.100.0
 
 FROM debian:12-slim AS build
 ARG RUST_TOOLCHAIN
