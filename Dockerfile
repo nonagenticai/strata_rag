@@ -1,14 +1,14 @@
 # strata-rag, CPU-only Linux image. strata runs no model: embeddings and reranking come from the
 # HTTP providers (providers.toml / tenant registrations), so this image is the full service.
 #
-# Base images are debian:12-slim from Docker Hub. There is no glibc Rust image
-# (library/rust is 1-alpine only), so the builder is debian:12-slim with a
+# Base images are debian:13-slim from Docker Hub. There is no glibc Rust image
+# (library/rust is 1-alpine only), so the builder is debian:13-slim with a
 # pinned Rust toolchain installed by rustup. That keeps builder and runtime on the same
 # glibc, which the tokenizers (C++ esaxx, onig) / aws-lc native builds expect.
 # Pin both FROM lines by digest when promoting this into a pipeline.
 ARG RUST_TOOLCHAIN=1.100.0
 
-FROM debian:12-slim AS build
+FROM debian:13-slim AS build
 ARG RUST_TOOLCHAIN
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # hadolint ignore=DL3008
@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo build --release --locked \
     && install -D -m 0755 target/release/strata /out/strata
 
-FROM debian:12-slim AS runtime
+FROM debian:13-slim AS runtime
 # ca-certificates: rustls-native-certs (providers / laya over https). curl: the HEALTHCHECK.
 # hadolint ignore=DL3008
 RUN apt-get update \
