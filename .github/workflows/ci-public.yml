@@ -89,7 +89,7 @@ jobs:
       REDIS_URL: redis://127.0.0.1:6379/
       # pgvector is required by the schema; plain postgres:18 has no extension.
       PG_IMAGE: pgvector/pgvector:0.8.7-pg18
-      REDIS_IMAGE: library/redis:8.10.1-alpine
+      REDIS_IMAGE: library/redis:8.10.3-alpine
     steps:
       - uses: actions/checkout@v7
 
