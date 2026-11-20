@@ -1,0 +1,32 @@
+name: preflight
+
+# "Does it compile?" — answered on a free GitHub-hosted runner, on the lane branch you push
+# anyway, instead of in your git hook. Replaces `rbuild` (retired 2026-11-20), which sent every
+# build over ssh to one 8 GiB Mac with four slots and made ten sessions queue overnight.
+#
+# This is NOT the PR run and it is not a gate: it writes no required status, so it can neither
+# block nor unblock a merge. It runs fmt plus a clippy `--all-targets -D warnings` pass — the
+# compile half of `ci-public.yml`'s `checks` job, which is where the majority of PR reds come
+# from — and nothing else. The test suite stays in `checks`.
+#
+# `cache_shared_key` matches the PR workflow's cache key, so this restores the dependency cache
+# the last `main` run saved instead of paying a cold compile. The preflight never saves.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['lane/**', 'issue/**', 'slice/**']
+
+# One run per branch: a newer push cancels its predecessor, so ten sessions on ten branches cost
+# ten parallel jobs, not ten queued ones.
+concurrency:
+  group: preflight-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    uses: nonagenticai/ci-workflows/.github/workflows/rust-preflight.yml@d2ae87a417b00013838ba18841cdd1642b83fb89
+    with:
+      cache_shared_key: checks

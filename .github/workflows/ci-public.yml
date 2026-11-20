@@ -99,15 +99,20 @@ jobs:
           rustup show
           rustc --version
 
-      - uses: actions/cache@v6
+      # `swatinem/rust-cache`, not `actions/cache`. The registry-only step this replaces
+      # carried the comment "target/ is multi-gigabyte and would thrash the 10 GB cache
+      # budget" — true of a raw tree copy, and beside the point: rust-cache prunes to its own
+      # budget and caches the DEPENDENCY graph without the workspace's own crates, which is
+      # where a cold Rust job spends most of its minutes. Saving on `main` only: a PR's merge
+      # ref cannot share an entry with the default branch, so saving there only evicts it.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
-          # Registry only: target/ is multi-gigabyte and would thrash the 10 GB cache budget.
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-
+          prefix-key: v1-rust
+          shared-key: checks
+          cache-all-crates: "false"
+          cache-on-failure: "false"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          env-vars: CARGO_PROFILE_DEV_DEBUG
 
       # ⛔ Both storage choices below are load-bearing and they are different resources.
       #   --shm-size: Docker's default /dev/shm is 64 MB and Postgres parallel workers
@@ -207,17 +212,8 @@ jobs:
           done
           echo "pushed $ref:$sha $ref:$run $ref:latest"
 
-  # The coding gate: the app runs this repository's HEAD through its own lint plan (fmt,
-  # clippy) in a kata Pod, from one reusable workflow pinned to one coding commit. The licence
-  # token is an Actions secret; a fork PR never receives it, so the called job skips there.
-  #
-  # `kind: lint`, not `check`: measured 2026-11-20, every test panicked migrating the throwaway
-  # database because `extension "vector" is not available` — this repository's suite needs the
-  # pgvector image its own CI uses, and the Pod starts stock postgres:18. The lint half is the
-  # verdict the Pod can actually give.
-  gate:
-    uses: nonagenticai/coding/.github/workflows/gate.yml@ee24e1b774fd177c5911c33194093c488ec08836
-    with:
-      client_ref: ee24e1b774fd177c5911c33194093c488ec08836
-      kind: lint
-    secrets: inherit
+  # The coding-gate job was here: this repository's HEAD through `coding`'s lint plan in a kata
+  # Pod, 1131 s on the last main run (2026-11-20). It was never a required status, and the
+  # `checks` job above already runs fmt and clippy -D warnings as required contexts — every
+  # verdict it could give was a second, slower copy of one this file already produces. The
+  # `coding` service keeps its own gate as dogfooding; consumers stopped calling it.
