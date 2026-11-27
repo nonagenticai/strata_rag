@@ -536,21 +536,23 @@ async fn dispatch(engine: Arc<Engine>, command: Command) -> Result<ExitCode> {
             let req = AskRequest {
                 query: QueryRequest::new(query),
                 max_tokens,
+                instructions: None,
             };
             let resp = engine.ask(tenant, &req).await?;
             println!("{}\n", resp.answer.trim());
             println!("sources:");
-            for (i, r) in resp.results.iter().enumerate() {
-                let cited = if resp.citations.contains(&r.chunk_id) {
+            for d in &resp.documents {
+                let cited = if resp.citations.iter().any(|c| d.chunk_ids.contains(c)) {
                     "*"
                 } else {
                     " "
                 };
                 println!(
-                    "{cited}[{}] {} chunk={}",
-                    i + 1,
-                    r.store_path.join("/"),
-                    r.chunk_id
+                    "{cited}[{}] {} document={} chunks={}",
+                    d.number,
+                    d.store_path.join("/"),
+                    d.document_id,
+                    d.chunk_ids.len()
                 );
             }
             println!(

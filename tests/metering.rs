@@ -240,6 +240,7 @@ async fn ask_meters_its_generation_as_chat() {
             &AskRequest {
                 query: QueryRequest::new("quantum photons"),
                 max_tokens: 100,
+                instructions: None,
             },
         )
         .await

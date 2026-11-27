@@ -102,6 +102,7 @@ async fn ask_generates_from_numbered_sources_and_maps_citations() {
     let req = AskRequest {
         query: QueryRequest::new("quantum photons"),
         max_tokens: 800,
+        instructions: None,
     };
     let resp = engine.ask(tn(), &req).await.unwrap();
     assert_eq!(resp.results.len(), 2);
@@ -150,6 +151,7 @@ async fn ask_without_a_chat_provider_is_409_provider_not_configured() {
             &AskRequest {
                 query: QueryRequest::new("anything"),
                 max_tokens: 800,
+                instructions: None,
             },
         )
         .await
@@ -180,6 +182,7 @@ async fn ask_with_chat_down_is_generation_unavailable_but_query_still_works() {
             &AskRequest {
                 query: QueryRequest::new("quantum photons"),
                 max_tokens: 800,
+                instructions: None,
             },
         )
         .await
@@ -211,6 +214,7 @@ async fn ask_rejects_zero_max_tokens() {
             &AskRequest {
                 query: QueryRequest::new("x"),
                 max_tokens: 0,
+                instructions: None,
             },
         )
         .await

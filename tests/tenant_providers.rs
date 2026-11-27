@@ -969,6 +969,7 @@ fn ask(expand: bool) -> strata_rag::ask::AskRequest {
     strata_rag::ask::AskRequest {
         query: q,
         max_tokens: 64,
+        instructions: None,
     }
 }
 

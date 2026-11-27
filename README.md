@@ -636,7 +636,21 @@ first and last page each chunk spans (`page_start` / `page_end`; `null` for text
 anchors, such as audio transcripts, records or plain text, and for chunks ingested before
 migration 0007). Every `/api/query` and `/api/ask` result carries them, together with the chunk's
 `ord` in its document and the document's `title` and `source`, so a citation can say
-"Survey, p. 2–3". `/api/ask` also gives the model each source as `[n] (store / path · Title · p. 2–3)`.
+"Survey, p. 2–3".
+
+`/api/ask` numbers **documents, not chunks**: one numbered source per document, with every
+retrieved chunk of that document (in `ord` order) under the same number, and the document's merged
+page span in the label. The prompt shows the model `[n] (store / path · Title · p. 2–3)`; the
+answer cites `[n]`.
+
+The response carries `documents`, the numbering map (`number`, `document_id`, `store_path`,
+`layer`, `pack?`, `source`, `title`, `page_start`, `page_end`, `chunk_ids`). `citations` stays a
+list of **chunk** ids — all the retrieved chunks of each cited document, in first-mention document
+order — so a caller that only reads `citations` keeps working. `results` is unchanged: every
+retrieved chunk, in rank order.
+
+A caller may pass `instructions` (at most 16 KiB): the job's persona, prepended to the system
+message before strata's fixed citation rules. Omit it and the prompt is exactly the default one.
 
 ### Tenant eval questions
 
