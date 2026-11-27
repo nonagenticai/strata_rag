@@ -432,6 +432,7 @@ async fn query_and_ask_never_return_another_tenants_chunks() {
                     &AskRequest {
                         query: req,
                         max_tokens: 50,
+                        instructions: None,
                     },
                 )
                 .await

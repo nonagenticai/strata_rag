@@ -255,6 +255,7 @@ async fn ask_reports_the_expansion_it_searched_with() {
             &strata_rag::ask::AskRequest {
                 query: req(true),
                 max_tokens: 100,
+                instructions: None,
             },
         )
         .await
